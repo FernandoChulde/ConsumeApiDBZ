@@ -3,12 +3,13 @@
 namespace consumeApi
 {
     using System;
+    using System.Collections.Generic;
+    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.ServiceBus;
-
-
+    using Newtonsoft.Json;
 
     class Program
     {
@@ -30,7 +31,7 @@ namespace consumeApi
             Console.WriteLine("======================================================");
 
             // Send messages.
-            await SendMessagesAsync(numberOfMessages);
+            await SendMessagesAsync();
 
             Console.ReadKey();
 
@@ -39,26 +40,37 @@ namespace consumeApi
 
 
 
-        static async Task SendMessagesAsync(int numberOfMessagesToSend)
+        static async Task SendMessagesAsync()
         {
             try
             {
-                for (var i = 0; i < numberOfMessagesToSend; i++)
+                var endpoint = "https://dragon-ball-api.herokuapp.com/api/character/";
+                var http = new HttpClient();
+                var response = await http.GetStringAsync(endpoint);
+                //var posts = JsonConvert.DeserializeObject<List<Character>>(response);
+              
+                var message = new Message(Encoding.UTF8.GetBytes(response));
+                // Write the body of the message to the console
+
+                //Console.WriteLine(response.GetType());
+                //Console.WriteLine(response);
+
+                //Send the message to the queue
+                var personajes = JsonConvert.DeserializeObject<List<Character>>(Encoding.UTF8.GetString(message.Body));
+
+
+
+                foreach (var personaje in personajes)
                 {
-                    // Create a new message to send to the queue
-                    string messageBody = $"Message {i}";
-                    var message = new Message(Encoding.UTF8.GetBytes(messageBody));
-
-
-
-                    // Write the body of the message to the console
-                    Console.WriteLine($"Sending message: {messageBody}");
-
-
-
-                    // Send the message to the queue
-                    await queueClient.SendAsync(message);
+                    Console.WriteLine("----------------------------");
+                    Console.WriteLine($"Name:{personaje.name}");
+                    Console.WriteLine($"Status:{ personaje.status}");
+                    Console.WriteLine($"Species: { personaje.species}");
+                    Console.WriteLine($"Series:{ personaje.series}");
+                    Console.WriteLine($"Gender:{ personaje.gender}");
+                    Console.WriteLine($"Origin Planet:{ personaje.originPlanet}");
                 }
+                await queueClient.SendAsync(message);
             }
             catch (Exception exception)
             {
